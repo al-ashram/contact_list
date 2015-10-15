@@ -1,12 +1,24 @@
-require_relative 'contact'
-require_relative 'contact_database'
 require 'pry'
+require 'active_record'
+require_relative 'lib/contact'
 
-# TODO: Implement command line interaction
-# This should be the only file where you use puts and gets
 
-#puts "Hello! Please type in 'help' for a list of options"
-#commaned = gets.chomp
+ActiveRecord::Base.logger = Logger.new(STDOUT)
+
+puts 'Establishing connection to database...'
+
+ActiveRecord::Base.establish_connection(
+  adapter: 'postgresql',
+  database: 'contact_list',
+  username: 'development',
+  password: 'development',
+  host: 'localhost',
+  port: 5432,
+  pool: 5,
+  encoding: 'unicode',
+  min_messages: 'error'
+  )
+puts "CONNECTED"
 
 
 command, option = ARGV 
@@ -18,27 +30,32 @@ if command == "help"
   puts "\tshow - Show a contact"
   puts "\tfind - Find a contact"
 elsif command == "new"
+  puts "Please enter the first name of the contact"
+  first_name = STDIN.gets.chomp
 
+  puts "Please enter the last name of the contact"
+  last_name = STDIN.gets.chomp
 
   puts "Please enter the email address of the contact"
   email = STDIN.gets.chomp
 
-
-  if Contact.duplicate?(email) == true
-    puts "Sorry! Email already exists!!"
-  else
-    puts "Please enter the full name of the contact"
-    name = STDIN.gets.chomp
-    Contact.create(name, email)
-  end
+  new_contact = Contact.create(firstname: first_name, lastname: last_name, email: email)
+  puts new_contact.errors.full_messages
 elsif command == "list"
-  Contact.all
+  contacts = Contact.all
+  contacts.each do |contact|
+    puts contact.attributes 
+  end
 elsif command == "show"
-  id = option
-  Contact.show(id)
+  id = option.to_i
+  contact = Contact.find(id)
+  puts contact.attributes 
 elsif command == "find"
   search_term = option
-  Contact.find(search_term)
+  contacts = Contact.where('firstname = ? OR lastname = ?', search_term, search_term)
+  contacts.each do |contact|
+    puts contact.attributes 
+  end
 end
 
 
